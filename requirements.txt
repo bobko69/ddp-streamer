@@ -1,0 +1,11 @@
+opencv-python>=4.8; sys_platform == "win32" or (sys_platform == "darwin" and platform_machine == "arm64")
+# Intel Macs (OpenCV's own wheels need macOS 14): python tools/mac_opencv.py builds and installs
+# OpenCV from source (build.py does this itself on both Macs)
+opencv-python-headless>=4.8; sys_platform == "linux"   # no Qt: the app never opens OpenCV windows
+numpy>=1.24
+pillow>=10      # draws the bundled fonts in fonts/
+sv-ttk>=2.6        # Windows 11 style dark/light theme (optional: stock look without it)
+av>=12             # video and sound decoding (without it OpenCV plays video, no sound)
+sounddevice>=0.4   # sound output (Linux also needs PortAudio: libportaudio2)
+mss>=9; sys_platform != "win32"   # screen capture on Linux / Mac (Windows uses its own)
+certifi; sys_platform == "darwin"   # HTTPS certificates for python.org's Python on Mac

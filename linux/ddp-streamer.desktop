@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=DDP Streamer
+Comment=Play videos, pictures, text, clocks and scripts on DDP LED displays
+Exec=ddp-streamer %F
+Icon=ddp-streamer
+Terminal=false
+Categories=AudioVideo;Video;
+StartupWMClass=ddp-streamer

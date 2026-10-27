@@ -1,0 +1,143 @@
+# Builds DDP Streamer for Windows, Linux and Mac (Apple Silicon + Intel) with
+# build.py, the same script used by hand. Started by hand (Actions -> Build ->
+# Run workflow) or by pushing a version tag (v1.0.0), which also makes a draft
+# release with all the downloads.
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      systems:
+        description: "Which builds (any of: windows linux mac-arm mac-intel)"
+        default: "windows linux mac-arm mac-intel"
+      keep:
+        description: "Keep the downloads (artifacts, 2 days)"
+        type: boolean
+        default: true
+  push:
+    tags: ["v*"]
+
+env:
+  PYTHON_MAC: "3.14.8"        # python.org build on the Macs (as tested by hand: Tk 9.0)
+  PYTHON: "3.14"
+
+jobs:
+  windows:
+    if: github.event_name == 'push' || contains(inputs.systems, 'windows')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON }}
+      - name: Inno Setup (for the installer)
+        run: choco install innosetup -y --no-progress
+      - name: Packages
+        run: |
+          python -m pip install -U pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Build
+        run: python build.py
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'push' || inputs.keep
+        with:
+          name: windows
+          retention-days: 2
+          compression-level: 0
+          path: |
+            dist/DDP-Streamer-setup.exe
+            dist/DDP-Streamer-windows.zip
+
+  linux:
+    if: github.event_name == 'push' || contains(inputs.systems, 'linux')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build image (Ubuntu 22.04)
+        run: docker build -f linux/Dockerfile -t ddp-build .
+      - name: Build
+        run: docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/src" ddp-build python build.py
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'push' || inputs.keep
+        with:
+          name: linux
+          retention-days: 2
+          compression-level: 0
+          path: |
+            dist/DDP-Streamer-x86_64.AppImage
+            dist/DDP-Streamer-linux.tar.gz
+
+  mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - chip: mac-arm
+            runner: macos-15
+          - chip: mac-intel
+            runner: macos-15-intel
+    name: ${{ matrix.chip }}
+    if: github.event_name == 'push' || contains(inputs.systems, 'mac')
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Skip if not asked for
+        id: want
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] || [[ " ${{ inputs.systems }} " == *" ${{ matrix.chip }} "* ]]; then
+            echo "go=1" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v7
+        if: steps.want.outputs.go
+      - name: Python from python.org
+        if: steps.want.outputs.go
+        run: |
+          curl -fsSL -o /tmp/python.pkg "https://www.python.org/ftp/python/$PYTHON_MAC/python-$PYTHON_MAC-macos11.pkg"
+          sudo installer -pkg /tmp/python.pkg -target /
+          /Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14 -m venv venv
+      - name: Packages
+        if: steps.want.outputs.go
+        run: |
+          venv/bin/pip install -U pip
+          venv/bin/pip install -r requirements.txt pyinstaller
+      # OpenCV compiled without FFmpeg (tools/mac_opencv.py, ~10-20 min): only once per version
+      - uses: actions/cache@v6
+        if: steps.want.outputs.go
+        with:
+          path: build/opencv-wheel
+          key: opencv-${{ matrix.chip }}-${{ hashFiles('tools/mac_opencv.py') }}
+      - name: Build
+        if: steps.want.outputs.go
+        run: venv/bin/python build.py
+      - uses: actions/upload-artifact@v7
+        if: steps.want.outputs.go && (github.event_name == 'push' || inputs.keep)
+        with:
+          name: ${{ matrix.chip }}
+          retention-days: 2
+          compression-level: 0
+          path: dist/DDP-Streamer-mac-*.dmg
+
+  release:
+    if: github.event_name == 'push'
+    needs: [windows, linux, mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON }}
+      - name: Sources of the (L)GPL libraries (for the PyAV version the builds use)
+        run: |
+          python -m pip install -r requirements.txt
+          python tools/gpl_sources.py out
+      - uses: actions/download-artifact@v8
+        with:
+          path: out
+          merge-multiple: true
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" out/* --repo "${{ github.repository }}" --draft \
+            --title "DDP Streamer ${{ github.ref_name }}" --notes "Draft - fill in the release notes."

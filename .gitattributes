@@ -1,0 +1,4 @@
+# Linux files keep Unix line endings even on a Windows checkout
+*.sh text eol=lf
+*.desktop text eol=lf
+linux/Dockerfile text eol=lf

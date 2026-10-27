@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Animation Scripts - DDP Streamer</title>
+<style>
+:root {
+  --bg: #0f172a; --panel: #1e293b; --panel2: #162033; --line: #334155;
+  --fg: #cbd5e1; --head: #f1f5f9; --muted: #94a3b8; --accent: #38bdf8; --ok: #2dd4bf; --warn: #fb7185;
+  --code: #0b1222;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 "Segoe UI", system-ui, sans-serif; }
+.wrap { display: grid; grid-template-columns: 230px minmax(0, 1fr); max-width: 1180px; margin: 0 auto; }
+nav { position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; padding: 28px 16px 28px 20px;
+      border-right: 1px solid var(--line); font-size: 14px; }
+nav a { display: block; color: var(--muted); text-decoration: none; padding: 3px 8px; border-radius: 6px; }
+nav a:hover { color: var(--head); background: var(--panel); }
+nav .brand { color: var(--head); font-weight: 700; font-size: 15px; margin-bottom: 12px; padding-left: 8px; }
+main { padding: 28px 40px 80px; min-width: 0; }
+h1 { color: var(--head); font-size: 34px; margin: 0 0 6px; line-height: 1.2; }
+h2 { color: var(--head); font-size: 24px; margin: 52px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+h3 { color: var(--head); font-size: 18px; margin: 28px 0 8px; }
+h4 { color: var(--head); font-size: 16px; margin: 20px 0 6px; }
+p, li { max-width: 78ch; }
+a { color: var(--accent); }
+.lead { font-size: 18px; color: var(--muted); max-width: 70ch; }
+code { font: 14px/1.5 Consolas, "JetBrains Mono", monospace; background: var(--code); padding: 1px 6px; border-radius: 5px; color: #e2e8f0; }
+pre { background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; max-width: 860px; }
+pre code { background: none; padding: 0; font-size: 14px; }
+.c { color: #7f8ca3; } .k { color: #c792ea; } .s { color: #c3e88d; } .n { color: #f78c6c; } .f { color: #82aaff; }
+table { border-collapse: collapse; width: 100%; max-width: 900px; margin: 10px 0 18px; font-size: 15px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--head); font-weight: 600; background: var(--panel2); }
+td code { white-space: nowrap; }
+.note { background: var(--panel); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; max-width: 860px; margin: 14px 0; }
+.note.warn { border-left-color: var(--warn); }
+.note.ok { border-left-color: var(--ok); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin: 18px 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.led { position: relative; background: #000; line-height: 0; }
+.led img { width: 100%; aspect-ratio: 2 / 1; image-rendering: pixelated; display: block; }
+.led::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(100% / 128 - 1px), rgba(0,0,0,.45) 0 calc(100% / 128)),
+              repeating-linear-gradient(0deg, transparent 0 calc(100% / 64 - 1px), rgba(0,0,0,.45) 0 calc(100% / 64)); }
+.card .txt { padding: 10px 14px 12px; }
+.card b { color: var(--head); }
+.card small { color: var(--muted); display: block; font-size: 13.5px; line-height: 1.45; margin-top: 2px; }
+.card .tag { float: right; font-size: 12px; color: var(--accent); }
+.pal { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+.pal span { width: 260px; height: 18px; border-radius: 4px; display: inline-block; }
+.steps { counter-reset: s; list-style: none; padding-left: 0; }
+.steps li { counter-increment: s; position: relative; padding-left: 40px; margin: 10px 0; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: var(--bg); font-weight: 700; text-align: center; line-height: 26px; font-size: 14px; }
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); }
+  nav { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+  main { padding: 20px 16px 60px; }
+  table { display: block; overflow-x: auto; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">Animation Scripts</div>
+  <a href="#gallery">What you can make</a>
+  <a href="#start">Getting started</a>
+  <a href="#first">Your first script</a>
+  <a href="#kinds">pixel() or frame()?</a>
+  <a href="#space">Position and time</a>
+  <a href="#colors">Colors and palettes</a>
+  <a href="#drawing">Drawing</a>
+  <a href="#effects">Effects</a>
+  <a href="#data">Live data</a>
+  <a href="#games">Games and game servers</a>
+  <a href="#params">Settings (sliders)</a>
+  <a href="#memory">Remembering things</a>
+  <a href="#math">Math helpers and noise</a>
+  <a href="#arrays">Whole-picture math</a>
+  <a href="#recipes">Recipes</a>
+  <a href="#speed">Keeping it fast</a>
+  <a href="#errors">When something's wrong</a>
+  <a href="#files">Files and sharing</a>
+</nav>
+<main>
+
+<h1>Animation Scripts</h1>
+<p class="lead">Write your own animations for the LED wall. A script is a short Python file: tell it what
+color each pixel should be, or draw shapes, text and particles on a canvas. It runs live on the wall,
+and sliders let you tweak it without touching the code.</p>
+
+<h2 id="gallery">What you can make</h2>
+<p>These all come with the app (<b>Add &rarr; Script...</b>, under <i>Examples</i>). Each one is a single
+file you can open, read and change. They are commented so you can learn from them.</p>
+<div class="gallery">
+  <div class="card"><div class="led"><img src="img/rainbow_wave.webp" alt=""></div><div class="txt"><span class="tag">1 line</span><b>Rainbow wave</b><small>The simplest script: one line of math. Start here.</small></div></div>
+  <div class="card"><div class="led"><img src="img/plasma.webp" alt=""></div><div class="txt"><span class="tag">pixel</span><b>Plasma</b><small>Sine waves added together and colored with a palette.</small></div></div>
+  <div class="card"><div class="led"><img src="img/fire.webp" alt=""></div><div class="txt"><span class="tag">noise</span><b>Fire</b><small>Flames licking up from the bottom, with wind.</small></div></div>
+  <div class="card"><div class="led"><img src="img/fireworks.webp" alt=""></div><div class="txt"><span class="tag">particles</span><b>Fireworks</b><small>Rockets burst into hundreds of sparks with gravity.</small></div></div>
+  <div class="card"><div class="led"><img src="img/aurora.webp" alt=""></div><div class="txt"><span class="tag">noise</span><b>Aurora</b><small>Northern lights rippling over a starry sky.</small></div></div>
+  <div class="card"><div class="led"><img src="img/starfield.webp" alt=""></div><div class="txt"><span class="tag">3D</span><b>Starfield</b><small>Flying through space; stars streak past.</small></div></div>
+  <div class="card"><div class="led"><img src="img/code_rain.webp" alt=""></div><div class="txt"><span class="tag">text</span><b>Code rain</b><small>Falling glyphs, Matrix style.</small></div></div>
+  <div class="card"><div class="led"><img src="img/metaballs.webp" alt=""></div><div class="txt"><span class="tag">pixel</span><b>Lava lamp</b><small>Blobs that melt together when they meet.</small></div></div>
+  <div class="card"><div class="led"><img src="img/tunnel.webp" alt=""></div><div class="txt"><span class="tag">pixel</span><b>Tunnel</b><small>An endless checkered tunnel.</small></div></div>
+  <div class="card"><div class="led"><img src="img/hyperspace.webp" alt=""></div><div class="txt"><span class="tag">feedback</span><b>Hyperspace</b><small>Zoom-and-turn feedback makes a spiral tunnel.</small></div></div>
+  <div class="card"><div class="led"><img src="img/kaleidoscope.webp" alt=""></div><div class="txt"><span class="tag">effect</span><b>Kaleidoscope</b><small>Colored noise mirrored round the middle.</small></div></div>
+  <div class="card"><div class="led"><img src="img/swirl.webp" alt=""></div><div class="txt"><span class="tag">shapes</span><b>Swirl</b><small>A spiral of dots winding up and back.</small></div></div>
+  <div class="card"><div class="led"><img src="img/ripples.webp" alt=""></div><div class="txt"><span class="tag">simulation</span><b>Raindrops</b><small>Rings spreading on water, bouncing off the edges.</small></div></div>
+  <div class="card"><div class="led"><img src="img/snowfall.webp" alt=""></div><div class="txt"><span class="tag">particles</span><b>Snowfall</b><small>Drifting snow that piles up along the bottom.</small></div></div>
+  <div class="card"><div class="led"><img src="img/game_of_life.webp" alt=""></div><div class="txt"><span class="tag">simulation</span><b>Game of Life</b><small>Conway's cells, colored by age; restarts itself.</small></div></div>
+  <div class="card"><div class="led"><img src="img/bouncing_balls.webp" alt=""></div><div class="txt"><span class="tag">physics</span><b>Bouncing balls</b><small>Gravity, bounces and trails.</small></div></div>
+  <div class="card"><div class="led"><img src="img/marquee.webp" alt=""></div><div class="txt"><span class="tag">text</span><b>Rainbow marquee</b><small>Your message on a wave, with a text box setting.</small></div></div>
+</div>
+<h3>Live data and games</h3>
+<p>Scripts can show information from the internet and from games, updating by themselves.
+See <a href="#data">Live data</a> and <a href="#games">Games and game servers</a>.</p>
+<div class="gallery">
+<div class="card"><div class="led"><img src="img/weather.webp" alt=""></div><div class="txt"><span class="tag">live data</span><b>Weather</b><small>Any town: animated sky, temperature and the next 12 hours.</small></div></div>
+<div class="card"><div class="led"><img src="img/stock_ticker.webp" alt=""></div><div class="txt"><span class="tag">live data</span><b>Stock ticker</b><small>Stocks, indexes and crypto scrolling, with a chart of today.</small></div></div>
+<div class="card"><div class="led"><img src="img/youtube_counter.webp" alt=""></div><div class="txt"><span class="tag">live data</span><b>YouTube subscribers</b><small>A channel's count, with confetti when it goes up.</small></div></div>
+<div class="card"><div class="led"><img src="img/news_ticker.webp" alt=""></div><div class="txt"><span class="tag">live data</span><b>News ticker</b><small>Headlines from any news feed.</small></div></div>
+<div class="card"><div class="led"><img src="img/web_number.webp" alt=""></div><div class="txt"><span class="tag">live data</span><b>Any number from the web</b><small>One value from any web address: a price, counter or sensor.</small></div></div>
+<div class="card"><div class="led"><img src="img/countdown.webp" alt=""></div><div class="txt"><span class="tag">clock</span><b>Countdown</b><small>Days, hours, minutes and seconds until your big day.</small></div></div>
+<div class="card"><div class="led"><img src="img/cs2_hud.webp" alt=""></div><div class="txt"><span class="tag">game</span><b>CS2 live HUD</b><small>Your Counter-Strike 2 game while you play: health, ammo, kills, bomb.</small></div></div>
+<div class="card"><div class="led"><img src="img/cs2_killfeed.webp" alt=""></div><div class="txt"><span class="tag">game server</span><b>CS2 server kill feed</b><small>Every kill on your server, the score, the bomb and round wins.</small></div></div>
+<div class="card"><div class="led"><img src="img/cs2_server.webp" alt=""></div><div class="txt"><span class="tag">game server</span><b>Game server status</b><small>Map, players and scores of CS2 and most Steam game servers.</small></div></div>
+</div>
+
+<h2 id="start">Getting started</h2>
+<h3>Play an example</h3>
+<ol class="steps">
+  <li>In the playlist click <b>Add &rarr; Script...</b></li>
+  <li>Pick a script on the left. The preview shows it running at your display's size.</li>
+  <li>Change its <b>Settings</b> (sliders, colors, choices); the preview follows right away.</li>
+  <li>Click <b>OK</b>. The script is now a playlist item. Like a picture it plays for <b>Image s</b>
+      seconds; set <b>Repeat</b> to <b>Loop current</b> to keep it on the wall.</li>
+</ol>
+<p>Right-click a script item in the playlist for <b>Edit...</b> (settings) and <b>Edit code...</b>.</p>
+
+<h3>Make your own</h3>
+<ol class="steps">
+  <li>In the Script window click <b>New script...</b> and give it a name. A small starter script is
+      created in <i>My scripts</i> and the editor opens.</li>
+  <li>Change something and press <b>Ctrl+S</b> (<b>Cmd+S</b> on a Mac). The preview (and the wall, if it's playing) picks up the
+      change at once; no need to restart anything.</li>
+  <li>If there's a mistake the editor shows the line in red and says what's wrong. The wall keeps the last
+      good picture, dimmed with a red edge, until you fix it.</li>
+</ol>
+<div class="note ok">To change an example, select it and click <b>Edit code</b>. The app makes your own copy
+in <i>My scripts</i> (with the same name, so playlist items use your version) and leaves the original alone.</div>
+
+<h2 id="first">Your first script</h2>
+<p>A script that colors the whole wall red:</p>
+<pre><code><span class="k">def</span> <span class="f">pixel</span>(x, y, t):
+    <span class="k">return</span> red</code></pre>
+<p><code>pixel</code> is asked for a color for every pixel, every frame. <code>x</code> goes from 0 (left) to 1
+(right), <code>y</code> from 0 (top) to 1 (bottom), and <code>t</code> is the time in seconds. Now use them:</p>
+<pre><code><span class="k">def</span> <span class="f">pixel</span>(x, y, t):
+    <span class="k">return</span> <span class="f">hsv</span>(x, <span class="n">1</span>, <span class="n">1</span>)          <span class="c"># hue follows x: a rainbow from left to right</span></code></pre>
+<p><code>hsv(hue, saturation, brightness)</code> makes a color; the hue goes round the rainbow from 0 to 1.
+Add time to make it move:</p>
+<pre><code><span class="k">def</span> <span class="f">pixel</span>(x, y, t):
+    <span class="k">return</span> <span class="f">hsv</span>(x - t * <span class="n">0.2</span>, <span class="n">1</span>, <span class="n">1</span>)  <span class="c"># slides along, one full rainbow every 5 seconds</span></code></pre>
+<p>Give it a slider so you can change the speed without editing:</p>
+<pre><code><span class="s">"""Moving rainbow
+My first script.
+"""</span>
+
+params = {
+    <span class="s">"speed"</span>: <span class="f">slider</span>(<span class="n">0.2</span>, <span class="n">0.05</span>, <span class="n">2.0</span>),
+}
+
+<span class="k">def</span> <span class="f">pixel</span>(x, y, t):
+    <span class="k">return</span> <span class="f">hsv</span>(x - t * speed, <span class="n">1</span>, <span class="n">1</span>)</code></pre>
+<p>The text in <code>"""</code> at the top is the name and description shown in the script list.
+<code>speed</code> is now a slider on the item, and inside the script it's just a number.</p>
+
+<h2 id="kinds">pixel() or frame()?</h2>
+<p>A script needs at least one of these two functions:</p>
+<table>
+<tr><th></th><th><code>pixel(x, y, t)</code></th><th><code>frame(c, t)</code></th></tr>
+<tr><td>What it does</td><td>Returns a color for every pixel, worked out from position and time</td><td>Draws on a canvas <code>c</code>: shapes, text, dots, effects</td></tr>
+<tr><td>Good for</td><td>Patterns, gradients, plasma, tunnels, waves, noise</td><td>Things that move around: balls, particles, text, sprites; anything with trails</td></tr>
+<tr><td>Picture between frames</td><td>Starts fresh each frame</td><td>Stays until you clear or fade it</td></tr>
+<tr><td>Examples</td><td>Rainbow wave, Plasma, Lava lamp, Tunnel</td><td>Fireworks, Swirl, Bouncing balls, Code rain</td></tr>
+</table>
+<p>You can have both: <code>pixel</code> paints the background first, then <code>frame</code> draws on top.
+And <code>setup(c)</code>, if you write one, runs once when the item starts (see
+<a href="#memory">Remembering things</a>).</p>
+<pre><code><span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">fade</span>(<span class="n">0.8</span>)                                  <span class="c"># darken what was there: short trails</span>
+    x = c.w / <span class="n">2</span> + <span class="f">sin</span>(t * <span class="n">2</span>) * c.w * <span class="n">0.4</span>             <span class="c"># swing left and right</span>
+    c.<span class="f">circle</span>(x, c.h / <span class="n">2</span>, c.h * <span class="n">0.2</span>, <span class="f">hsv</span>(t * <span class="n">0.1</span>))   <span class="c"># a ball that changes color</span></code></pre>
+
+<h2 id="space">Position and time</h2>
+<table>
+<tr><th>Name</th><th>Meaning</th></tr>
+<tr><td><code>x</code>, <code>y</code> (in pixel)</td><td>0..1 across and down the display (0, 0 is the top left)</td></tr>
+<tr><td><code>c.w</code>, <code>c.h</code></td><td>Width and height in pixels. <code>W</code> and <code>H</code> are the same numbers.</td></tr>
+<tr><td><code>aspect</code></td><td><code>W / H</code>, e.g. 2 for a 256 x 128 wall. Multiply x by it to keep circles round in <code>pixel</code>.</td></tr>
+<tr><td><code>t</code></td><td>Seconds since the item started (smooth, independent of the frame rate)</td></tr>
+<tr><td><code>c.dt</code></td><td>Seconds since the last frame; use it for movement: <code>pos += speed * c.dt</code></td></tr>
+<tr><td><code>c.frame</code></td><td>Frame counter, 0, 1, 2 ...</td></tr>
+</table>
+<p>In <code>frame()</code> drawing works in pixels: <code>c.circle(10, 5, 3)</code> is 10 pixels from the left,
+5 down. Positions don't have to be whole numbers; in-between values are drawn smoothly, so slow movement
+glides instead of jumping a pixel at a time.</p>
+<div class="note">Scripts adapt to any wall size. Work in fractions of <code>c.w</code> and <code>c.h</code>
+(<code>c.h * 0.2</code>) rather than fixed pixel numbers and your script will look right on a 64 x 32 panel
+and on a 512 x 256 wall.</div>
+
+<h2 id="colors">Colors and palettes</h2>
+<p>Anywhere a color is wanted you can write it any of these ways:</p>
+<table>
+<tr><th>Write</th><th>Means</th></tr>
+<tr><td><code>red</code>, <code>"orange"</code></td><td>Named colors: black, white, red, green, blue, yellow, cyan, magenta, orange, purple, pink, warm_white, gray</td></tr>
+<tr><td><code>"#ff0080"</code></td><td>Hex, like on web pages</td></tr>
+<tr><td><code>(1, 0, 0.5)</code></td><td>Red, green, blue from 0 to 1</td></tr>
+<tr><td><code>rgb(255, 0, 128)</code></td><td>Red, green, blue from 0 to 255</td></tr>
+<tr><td><code>hsv(h, s, v)</code></td><td>Hue 0..1 (wraps round), saturation, brightness</td></tr>
+<tr><td><code>palette("fire", k)</code></td><td>Color at position k (0..1, wraps) along a palette</td></tr>
+<tr><td><code>mix(a, b, k)</code></td><td>Blend from color a (k = 0) to color b (k = 1)</td></tr>
+</table>
+<p>Built-in palettes for <code>palette(name, k)</code>:</p>
+<div class="pal"><span style="background:linear-gradient(90deg, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)"></span><code>rainbow</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #000000 0%, #800000 25%, #ff3000 50%, #ffb000 75%, #ffff80 92%, #000000 100%)"></span><code>fire</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #000000 0%, #5a0000 20%, #ff2000 45%, #ff8000 60%, #ff2000 75%, #5a0000 90%, #000000 100%)"></span><code>lava</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #000030 0%, #0030a0 30%, #00a0c0 55%, #80ffe0 75%, #000030 100%)"></span><code>ocean</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #002000 0%, #106000 35%, #60b000 60%, #d0e060 80%, #002000 100%)"></span><code>forest</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #5500ab 0%, #c4007a 20%, #ff2a00 40%, #ffaa00 55%, #ff0060 70%, #2000ff 85%, #5500ab 100%)"></span><code>party</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #200040 0%, #a01060 30%, #ff5020 55%, #ffc040 75%, #200040 100%)"></span><code>sunset</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #000010 0%, #0040ff 35%, #a0e0ff 65%, #ffffff 85%, #000010 100%)"></span><code>ice</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #ff00ff 0%, #00ffff 33%, #80ff00 66%, #ff00ff 100%)"></span><code>neon</code></div>
+<div class="pal"><span style="background:linear-gradient(90deg, #ff60a0 0%, #ffe060 33%, #60c0ff 66%, #ff60a0 100%)"></span><code>candy</code></div>
+<p>A palette setting the user can choose: <code>"colors": dropdown(*PALETTES)</code>, then
+<code>palette(colors, k)</code>. To make your own palette add it to <code>PALETTES</code> at the top of your
+script:</p>
+<pre><code>PALETTES[<span class="s">"halloween"</span>] = [(<span class="n">0</span>, <span class="s">"#000000"</span>), (<span class="n">0.4</span>, <span class="s">"#ff6000"</span>), (<span class="n">0.7</span>, <span class="s">"#8000ff"</span>), (<span class="n">1</span>, <span class="s">"#000000"</span>)]</code></pre>
+<div class="note">On LEDs, black is "off" and looks very dark next to lit pixels, while dim colors still glow.
+Bright, saturated colors on black usually look best; pale pastels can look washed out.</div>
+
+<h2 id="drawing">Drawing</h2>
+<p>All of these are used in <code>frame(c, t)</code> as <code>c.something(...)</code>. Shapes are drawn smooth
+(anti-aliased). Most take two optional extras: <code>alpha=</code> (0..1, see-through) and
+<code>blend=</code>: <code>"normal"</code> (paint over), <code>"add"</code> (light adds up, like overlapping
+spotlights) or <code>"max"</code> (keep the brighter of old and new).</p>
+<table>
+<tr><th>Call</th><th>What it does</th></tr>
+<tr><td><code>c.clear(color)</code></td><td>Fill everything (default black). <code>c.fill</code> is the same.</td></tr>
+<tr><td><code>c.fade(0.85)</code></td><td>Darken everything, keeping 85%. Call each frame for trails.</td></tr>
+<tr><td><code>c.circle(x, y, r, color)</code></td><td>Filled circle. Add <code>width=2</code> for a ring.</td></tr>
+<tr><td><code>c.line(x1, y1, x2, y2, color, width=1)</code></td><td>Line</td></tr>
+<tr><td><code>c.rect(x, y, w, h, color)</code></td><td>Rectangle, top-left corner at x, y. <code>width=1</code> for an outline.</td></tr>
+<tr><td><code>c.polygon([(x, y), ...], color)</code></td><td>Any shape through a list of points (stars, triangles...)</td></tr>
+<tr><td><code>c.dot(x, y, color)</code></td><td>One smooth pixel (adds light by default)</td></tr>
+<tr><td><code>c.points(xs, ys, colors)</code></td><td>Thousands of dots at once from lists/arrays; colors is one color or one per dot. The fast way to do particles. <code>size=3</code> draws small circles.</td></tr>
+<tr><td><code>c.text("Hi", x, y, color, size)</code></td><td>Text centred on x, y (default: the middle). <code>size</code> = height in pixels. Also <code>font=</code>, <code>align="left"/"center"/"right"</code>, <code>valign="top"/"middle"/"bottom"</code>.</td></tr>
+<tr><td><code>c.text_width("Hi", size, font)</code></td><td>How wide that text is, in pixels</td></tr>
+<tr><td><code>c.image("logo.png", x, y, w, h)</code></td><td>A picture (next to the script, or a full path). Transparent PNGs work. Give w or h to scale it.</td></tr>
+<tr><td><code>c.get(x, y)</code></td><td>The color at a pixel</td></tr>
+</table>
+<p>Fonts for <code>font=</code>: Inter, Archivo Black, Anton, DejaVu Sans, Noto Sans, Barlow Semi Condensed,
+JetBrains Mono, Comic Neue and Press Start 2P (a pixel font, sharpest at sizes 8, 16, 24...).</p>
+
+<h2 id="effects">Effects</h2>
+<p>These change the whole picture. Combined with not clearing between frames they make trails, tunnels and
+kaleidoscopes.</p>
+<table>
+<tr><th>Call</th><th>What it does</th></tr>
+<tr><td><code>c.scroll(dx, dy)</code></td><td>Move everything by dx, dy pixels; it wraps round (<code>wrap=False</code> to let it fall off the edge)</td></tr>
+<tr><td><code>c.zoom(1.05, angle)</code></td><td>Grow (or shrink, below 1) and turn around the middle. Each frame + <code>fade</code> = a feedback tunnel (see Hyperspace).</td></tr>
+<tr><td><code>c.blur(1)</code></td><td>Soften the picture</td></tr>
+<tr><td><code>c.mirror("x")</code></td><td>Copy the left half onto the right, flipped. <code>"y"</code>: top onto bottom; <code>"both"</code>.</td></tr>
+<tr><td><code>c.kaleido(6, angle)</code></td><td>Kaleidoscope with 6 mirror segments</td></tr>
+<tr><td><code>c.glow(0.6)</code></td><td>Bloom around bright things. Only affects what's shown, so it never builds up over frames.</td></tr>
+<tr><td><code>c.set(color)</code></td><td>Set the whole canvas from a color made of arrays, e.g. <code>c.set(hsv(c.x, 1, 1))</code></td></tr>
+</table>
+
+<h2 id="data">Live data</h2>
+<p>Scripts can show live information: the weather, stock and crypto prices, YouTube subscribers, news headlines,
+or a value from any web address. None of the built-in sources needs an account.</p>
+<p>Data is fetched in the background, so the animation never stops to wait. A call gives you the latest value
+it has: <code>None</code> until the first answer arrives (show "Loading..." until then), and after that the
+newest answer, refreshed on its own. Answers are also saved on disk, so after a restart or a power cut the wall
+shows the last known values straight away, even before the internet is back.</p>
+<pre><code><span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">clear</span>()
+    w = <span class="f">weather</span>(<span class="s">"Chicago, IL"</span>)
+    <span class="k">if</span> w <span class="k">is</span> <span class="k">None</span>:
+        c.<span class="f">text</span>(<span class="s">"Loading..."</span>, size=c.h * <span class="n">0.2</span>)
+        <span class="k">return</span>
+    c.<span class="f">text</span>(<span class="s">f"{w['temp']:.0f}{w['unit']}"</span>, size=c.h * <span class="n">0.6</span>)    <span class="c"># 53°F</span></code></pre>
+<table>
+<tr><th>Call</th><th>Gives</th></tr>
+<tr><td><code>weather("Chicago, IL", units="F")</code></td><td>Current weather (Open-Meteo). A dict with <code>temp</code>, <code>feels_like</code>, <code>high</code>, <code>low</code>,
+  <code>wind</code>, <code>humidity</code>, <code>description</code> ("Partly cloudy"), <code>icon</code> (clear, partly, cloud, fog, rain, snow, storm),
+  <code>is_day</code>, <code>place</code>, <code>unit</code> ("°F") and <code>hours</code> (the next 12 hours: <code>time</code>, <code>temp</code>, <code>icon</code>).
+  The place can be "Town", "Town, State", "Town, Country" or "41.88, -87.63". <code>units="C"</code> for Celsius. Updates every 10 minutes.</td></tr>
+<tr><td><code>stock("AAPL")</code></td><td>A quote (Yahoo Finance): <code>price</code>, <code>change</code>, <code>change_pct</code>, <code>name</code>, <code>currency</code> and
+  <code>history</code> (prices through the day, for a little chart). Stocks (AAPL), indexes (^GSPC = S&amp;P 500, ^DJI = Dow), crypto (BTC-USD, ETH-USD),
+  currencies (EURUSD=X). Every minute.</td></tr>
+<tr><td><code>youtube("@MrBeast")</code></td><td>A channel's <code>subscribers</code> (a number), <code>text</code> as YouTube shows it ("30.5M") and <code>name</code>.
+  Takes an @handle or a channel link. YouTube rounds public counts over 1,000 to three digits, so big channels change in steps. Every 5 minutes.</td></tr>
+<tr><td><code>headlines(feed, count=10)</code></td><td>A list of headlines from a news feed (RSS or Atom), newest first. Most news sites, blogs and podcasts have one. Every 15 minutes.</td></tr>
+<tr><td><code>fetch(url, every=300)</code></td><td>Anything else: the answer from a web address, read as JSON data (<code>kind="text"</code> for plain text).
+  <code>headers={...}</code> sends extra headers, e.g. a login token.</td></tr>
+<tr><td><code>get_path(data, "a.b.0")</code></td><td>Digs a value out of JSON data: <code>get_path(d, "bitcoin.usd")</code>, <code>get_path(d, "items.0.name")</code>. <code>None</code> if it isn't there.</td></tr>
+<tr><td><code>data_error("weather")</code></td><td>What went wrong last time ("" when fine): <code>"weather"</code>, <code>"stock"</code>, <code>"youtube"</code>, <code>"headlines"</code>, <code>"game"</code> or a fetch address.</td></tr>
+</table>
+<h3>Your own sources</h3>
+<p>Lots of services answer with JSON data. Open the address in a browser to see what comes back, then pick the
+value with a path. The <b>Any number from the web</b> example does exactly this with settings, so you can often
+just use it. Two ideas:</p>
+<pre><code><span class="c"># a price from CoinGecko (free, no account)</span>
+d = <span class="f">fetch</span>(<span class="s">"https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&amp;vs_currencies=usd"</span>, every=<span class="n">60</span>)
+price = <span class="f">get_path</span>(d, <span class="s">"bitcoin.usd"</span>)
+
+<span class="c"># a sensor from Home Assistant (make a long-lived token under your profile there)</span>
+d = <span class="f">fetch</span>(<span class="s">"http://homeassistant.local:8123/api/states/sensor.outside_temperature"</span>, every=<span class="n">60</span>,
+          headers={<span class="s">"Authorization"</span>: <span class="s">"Bearer "</span> + token})
+temp = <span class="f">get_path</span>(d, <span class="s">"state"</span>)</code></pre>
+<p>For a key or token, use a setting that hides what's typed: <code>"token": textbox("", secret=True)</code>.</p>
+<div class="note">Be kind to free services: the same address is never asked more often than every 15 seconds, and the
+built-in helpers refresh far less often than that. Prices every minute and weather every 10 minutes are plenty for a wall.</div>
+
+<h2 id="games">Games and game servers</h2>
+<h3>From the player's game: CS2 live HUD</h3>
+<p>Counter-Strike 2 can send what's happening in your game to DDP Streamer while you play: health, armor,
+ammo, money, kills, the score, the bomb and more. This is Valve's own <i>Game State Integration</i>, made for
+things like this, so it's safe with VAC. The game itself sends the data, so it works on any server: official
+matchmaking, community servers and your own private server alike.</p>
+<p>The <b>CS2 live HUD</b> example uses it. The wall goes white when you're flashed, pulses red when you take damage,
+bursts on a kill (with HEADSHOT), counts down a planted bomb and sweeps the winning team's color at the end of a round.</p>
+<h4>Setting it up (CS2 on another computer)</h4>
+<ol class="steps">
+  <li>On the computer running DDP Streamer: <b>Add &rarr; Script...</b>, pick <b>CS2 live HUD</b>, leave
+      <b>CS2 runs on another computer</b> ticked and click OK. Play the item once. It writes the file
+      <code>gamestate_integration_ddp_streamer.cfg</code> into My scripts (<b>Folder</b> opens it), already set to send to this computer.</li>
+  <li>If Windows asks whether Python may use the network, allow it on <b>private</b> networks. The game's data
+      can't reach the app otherwise.</li>
+  <li>Copy that file to the gaming PC, into CS2's <code>game\csgo\cfg</code> folder. The easy way there: in Steam
+      right-click Counter-Strike 2 &rarr; Manage &rarr; Browse local files, then open <code>game</code>, <code>csgo</code>, <code>cfg</code>.</li>
+  <li>Start (or restart) CS2 and join a game. The wall switches from "Waiting for the game" to the HUD as soon as data arrives.</li>
+</ol>
+<p>If CS2 is on the same computer as DDP Streamer, untick <b>CS2 runs on another computer</b>; the script then puts
+the file into CS2's folder by itself, and you only restart CS2.</p>
+<div class="note">The address in the file is this computer's network address. If it changes (a new router, or the
+router hands out a different one), play the item again and copy the new file over. Giving this computer a fixed
+address in your router avoids that.</div>
+<h4>Making your own game script</h4>
+<p><code>game_state(3000, any_computer=True)</code> gives the latest data the game sent (a dict), or <code>None</code>
+before the first. <code>game_info(3000)["age"]</code> says how many seconds ago it last heard from the game; CS2 sends at
+least every 5 seconds while running. What's in it:</p>
+<table>
+<tr><th>Path</th><th>What</th></tr>
+<tr><td><code>map.name</code>, <code>map.round</code>, <code>map.team_ct.score</code>, <code>map.team_t.score</code></td><td>Map, round number (from 0), team scores</td></tr>
+<tr><td><code>round.phase</code></td><td>"freezetime" (buy time), "live" or "over"</td></tr>
+<tr><td><code>round.bomb</code>, <code>round.win_team</code></td><td>"planted", "defused" or "exploded"; "CT" or "T" when a round is over</td></tr>
+<tr><td><code>player.name</code>, <code>player.team</code></td><td>You (or the player you're watching), "CT" or "T"</td></tr>
+<tr><td><code>player.state.health</code>, <code>.armor</code>, <code>.helmet</code>, <code>.money</code></td><td>0..100, 0..100, True/False, dollars</td></tr>
+<tr><td><code>player.state.flashed</code>, <code>.smoked</code>, <code>.burning</code></td><td>0..255: how blinded, in smoke, on fire</td></tr>
+<tr><td><code>player.state.round_kills</code>, <code>.round_killhs</code></td><td>Kills and headshot kills this round</td></tr>
+<tr><td><code>player.match_stats.kills</code>, <code>.deaths</code>, <code>.assists</code>, <code>.mvps</code>, <code>.score</code></td><td>The match so far</td></tr>
+<tr><td><code>player.weapons</code></td><td>Each weapon: <code>name</code>, <code>type</code>, <code>state</code> ("active" is the one in hand), <code>ammo_clip</code>, <code>ammo_clip_max</code>, <code>ammo_reserve</code></td></tr>
+</table>
+<p>To react to something happening (a kill, damage), remember last frame's value on <code>c</code> and compare, as the
+CS2 example does.</p>
+<h3 id="servers">From the game server</h3>
+<p>A game server can share what's going on too, for everyone on it, not just one player. Two ways, used by two examples:</p>
+<table>
+<tr><th></th><th><b>Game server status</b></th><th><b>CS2 server kill feed</b></th></tr>
+<tr><td>Shows</td><td>Server name, map, how many are playing, each player's name and score</td><td>Every kill (who, weapon, headshot, wallbang), round wins and team score, bomb planted / defused / exploded, players joining, chat if you like</td></tr>
+<tr><td>Games</td><td>CS2 and most Steam game servers: TF2, Rust, ARK, Valheim, Garry's Mod...</td><td>CS2</td></tr>
+<tr><td>Setup on the server</td><td>Nothing (CS2 player names: the kill feed setup)</td><td>Two lines in its <code>server.cfg</code></td></tr>
+<tr><td>Updates</td><td>Every few seconds (it asks)</td><td>The moment it happens (the server sends)</td></tr>
+</table>
+<p>What a server can't see: health, ammo, money and flashbangs. Those only exist in each player's game, so the
+<b>CS2 live HUD</b> above is the one for them. You can run both: the HUD for the player, the kill feed for everyone watching.</p>
+<h3>Server status</h3>
+<p>Set <b>server address:port</b> to the server's address and game port, e.g. <code>192.168.1.50:27015</code>
+(27015 is the usual port and can be left off). For a server in Docker, use the address of the computer running Docker
+and the game port it publishes; if players can join it, it's already published.</p>
+<div class="note">CS2 servers report how many are playing but leave the names blank, even with
+<code>host_players_show 2</code>. For CS2 the example takes the names and kills from the server's log instead: set the
+server up as for the <a href="#killfeed">kill feed</a> below. Players show up as soon as they join, kill or die. Bots are dimmer.</div>
+<p>In your own scripts: <code>game_server("192.168.1.50:27015")</code> gives <code>name</code>, <code>map</code>,
+<code>game</code>, <code>players</code>, <code>max_players</code>, <code>bots</code>, <code>ping</code> and <code>list</code>
+(each player's <code>name</code>, <code>score</code> and <code>time</code> in seconds, best first), or <code>None</code>
+until it answers.</p>
+<h3 id="killmap">CS2 kill map</h3>
+<p>The <b>CS2 kill map</b> example uses the same server log as the kill feed below (same setup). Every kill flashes where it
+happened, seen from above: a line from the killer to the victim in the killer's team color, and a ring that grows and fades
+(white for a headshot). The spots of all the fights leave a faint trace, so the map's corridors draw themselves as the match
+goes on; higher floors are warmer. It starts over on a new map. Add <code>mp_logdetail 3</code> to the server's config for
+many more points: every hit, not just kills.</p>
+<h3 id="killfeed">CS2 server kill feed</h3>
+<ol class="steps">
+  <li>Add the <b>CS2 server kill feed</b> item and play it. The wall shows the exact lines for this computer, like:
+<pre><code>log on
+logaddress_add_http "http://192.168.1.20:3001"</code></pre></li>
+  <li>Put those two lines at the end of the server's <code>server.cfg</code> and restart the server (or type them into
+      the server console to try it right away). For a server in Docker, many images have settings for this instead; with
+      <code>joedwards32/cs2</code> add <code>CS2_LOG=on</code> and
+      <code>CS2_LOG_HTTP_URL=http://192.168.1.20:3001</code> (this computer's address) to the container's
+      environment and run <code>docker compose up -d</code>. Inside a container, "this computer"
+      still means the address of the computer running DDP Streamer, never <code>localhost</code>.</li>
+  <li>If Windows asks whether Python may use the network, allow it on <b>private</b> networks.</li>
+  <li>Start a match. The score bar appears with the first line the server sends, and kills slide in as they happen.</li>
+</ol>
+<p>In your own scripts: <code>server_log(3001)</code> gives the server's current state:
+<code>map</code>, <code>round</code>, <code>ct</code> and <code>t</code> (team scores), <code>bomb</code>
+(<code>None</code>, "planted", "defused" or "exploded"), <code>players</code> (each with <code>team</code>,
+<code>kills</code>, <code>deaths</code>, <code>assists</code>, <code>headshots</code>, <code>bot</code>), <code>time</code> (when the
+last line arrived; 0 = nothing yet) <code>spots</code> (where kills and, with <code>mp_logdetail 3</code>, hits happened: <code>(time, x, y, z, kind, team)</code>, kind "killer", "victim", "shooter" or "hit"; the latest 4000 on this map) and <code>events</code>: the latest 60 things that happened, oldest first. Each event has a
+<code>type</code> and a <code>seq</code> number that only goes up. To react to new ones, remember the last <code>seq</code>
+you handled on <code>c</code>.</p>
+<table>
+<tr><th>type</th><th>Also has</th></tr>
+<tr><td>kill</td><td><code>killer</code>, <code>killer_team</code>, <code>victim</code>, <code>victim_team</code>, <code>weapon</code>, <code>headshot</code>, <code>wallbang</code>, <code>noscope</code>, <code>through_smoke</code>, <code>killer_pos</code>, <code>victim_pos</code> (x, y, z)</td></tr>
+<tr><td>win</td><td><code>winner</code> ("CT"/"T"), <code>how</code> (e.g. Bomb_Defused, Target_Bombed, CTs_Win), <code>ct</code>, <code>t</code> (scores)</td></tr>
+<tr><td>planted, defused</td><td><code>player</code>, <code>site</code> (A/B, planted only)</td></tr>
+<tr><td>round_start</td><td><code>round</code></td></tr>
+<tr><td>match_start</td><td><code>map</code></td></tr>
+<tr><td>join, leave, switch</td><td><code>player</code> (switch also <code>team</code>)</td></tr>
+<tr><td>say</td><td><code>player</code>, <code>team</code>, <code>text</code>, <code>team_only</code></td></tr>
+<tr><td>exploded, round_end, suicide</td><td>suicide: <code>victim</code>, <code>weapon</code></td></tr>
+</table>
+
+<h2 id="params">Settings (sliders)</h2>
+<p>Put a <code>params</code> dictionary at the top of the script. Each entry becomes a control on the item, and
+inside the script its value is a plain variable with that name.</p>
+<pre><code>params = {
+    <span class="s">"speed"</span>:   <span class="f">slider</span>(<span class="n">1.0</span>, <span class="n">0.1</span>, <span class="n">5.0</span>),              <span class="c"># default, lowest, highest</span>
+    <span class="s">"count"</span>:   <span class="f">slider</span>(<span class="n">50</span>, <span class="n">10</span>, <span class="n">500</span>),               <span class="c"># all whole numbers: a whole-number slider</span>
+    <span class="s">"tint"</span>:    <span class="f">color_picker</span>(<span class="s">"#ff2080"</span>),             <span class="c"># becomes an (r, g, b) color</span>
+    <span class="s">"colors"</span>:  <span class="f">dropdown</span>(<span class="s">"fire"</span>, <span class="s">"ice"</span>, <span class="s">"neon"</span>),     <span class="c"># one of these words</span>
+    <span class="s">"trails"</span>:  <span class="f">checkbox</span>(<span class="k">True</span>),                    <span class="c"># True or False</span>
+    <span class="s">"message"</span>: <span class="f">textbox</span>(<span class="s">"HELLO"</span>),                   <span class="c"># a line of text</span>
+    <span class="s">"key"</span>:     <span class="f">textbox</span>(<span class="s">""</span>, secret=<span class="k">True</span>),         <span class="c"># typing shows dots (keys, tokens)</span>
+}</code></pre>
+<p>Every control takes <code>label="..."</code> if the name isn't clear enough
+(<code>slider(2, 1, 8, label="cell size (px)")</code>). <code>slider(..., step=1)</code> forces whole numbers.</p>
+<p>Moving a slider changes the preview immediately. Values that <code>setup()</code> uses (like a number of
+particles) take effect when the item starts again: click OK, or pick the script again in the list.</p>
+
+<h2 id="memory">Remembering things between frames</h2>
+<p>Store anything you need later on the canvas <code>c</code>. Set it up once in <code>setup(c)</code>, then
+update it in <code>frame(c, t)</code>:</p>
+<pre><code><span class="k">def</span> <span class="f">setup</span>(c):
+    c.balls = [[<span class="f">rand</span>(c.w), <span class="f">rand</span>(c.h), <span class="f">rand</span>(-<span class="n">30</span>, <span class="n">30</span>), <span class="f">rand</span>(-<span class="n">30</span>, <span class="n">30</span>)] <span class="k">for</span> _ <span class="k">in</span> <span class="f">range</span>(<span class="n">10</span>)]
+
+<span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">fade</span>(<span class="n">0.7</span>)
+    <span class="k">for</span> b <span class="k">in</span> c.balls:
+        b[<span class="n">0</span>] += b[<span class="n">2</span>] * c.dt                      <span class="c"># move by speed x time</span>
+        b[<span class="n">1</span>] += b[<span class="n">3</span>] * c.dt
+        <span class="k">if not</span> <span class="n">0</span> &lt; b[<span class="n">0</span>] &lt; c.w: b[<span class="n">2</span>] = -b[<span class="n">2</span>]       <span class="c"># bounce off the sides</span>
+        <span class="k">if not</span> <span class="n">0</span> &lt; b[<span class="n">1</span>] &lt; c.h: b[<span class="n">3</span>] = -b[<span class="n">3</span>]
+        c.<span class="f">circle</span>(b[<span class="n">0</span>], b[<span class="n">1</span>], <span class="n">3</span>, <span class="f">hsv</span>(b[<span class="n">0</span>] / c.w))</code></pre>
+<p>Moving things by <code>speed * c.dt</code> keeps the speed the same whatever the frame rate.</p>
+
+<h2 id="math">Math helpers and noise</h2>
+<p>Ready to use, no imports needed. They work on single numbers and on whole arrays.</p>
+<table>
+<tr><th>Name</th><th>What it gives</th></tr>
+<tr><td><code>sin cos tan atan2 sqrt exp log floor ceil hypot pi tau abs min max</code></td><td>The usual math (<code>tau</code> = 2 x pi, one full turn)</td></tr>
+<tr><td><code>clamp(v, lo=0, hi=1)</code></td><td>Keep v between lo and hi</td></tr>
+<tr><td><code>fract(v)</code></td><td>The part after the decimal point (repeats 0..1)</td></tr>
+<tr><td><code>smoothstep(a, b, v)</code></td><td>0 below a, 1 above b, a smooth curve between: soft edges</td></tr>
+<tr><td><code>pingpong(v)</code></td><td>0 &rarr; 1 &rarr; 0 as v goes 0 &rarr; 1 &rarr; 2: back and forth</td></tr>
+<tr><td><code>wave(v)</code></td><td>Smooth 0..1 wave, one cycle per 1.0 of v</td></tr>
+<tr><td><code>mix(a, b, k)</code> / <code>lerp</code></td><td>From a to b as k goes 0 to 1 (numbers or colors)</td></tr>
+<tr><td><code>rand()</code>, <code>rand(5)</code>, <code>rand(2, 5)</code>, <code>rand(0, 1, n=100)</code></td><td>Random number(s); <code>n=</code> gives an array of n</td></tr>
+<tr><td><code>randint(6)</code>, <code>randint(1, 6)</code></td><td>Random whole number (0..5 / 1..6)</td></tr>
+<tr><td><code>noise(x, y, z)</code></td><td>Smooth random-looking value 0..1 that changes gently; nearby inputs give similar values. Use time as one input for movement.</td></tr>
+<tr><td><code>fbm(x, y, z, octaves=4)</code></td><td>Noise in layers: more detail, like clouds, smoke or flames</td></tr>
+</table>
+<p><b>noise</b> is the secret behind natural-looking movement: fire, water, clouds, aurora. Compare:</p>
+<pre><code><span class="f">rand</span>()               <span class="c"># jumps around: static, sparkle</span>
+<span class="f">noise</span>(t)            <span class="c"># drifts smoothly: wind, flicker of a flame, a wandering position</span>
+<span class="f">noise</span>(x * <span class="n">4</span>, y * <span class="n">4</span>, t)  <span class="c"># soft blobs that slowly change: clouds, plasma</span></code></pre>
+<p>Python's own <code>math</code>, <code>random</code> and <code>numpy</code> (as <code>np</code>) are there too, and
+you can <code>import</code> other modules.</p>
+
+<h2 id="arrays">Whole-picture math</h2>
+<p>In <code>pixel(x, y, t)</code>, <code>x</code> and <code>y</code> aren't single numbers: they are grids holding
+every pixel's position, and your formula is worked out for the whole wall in one go. That's why it's fast. It also
+means a plain <code>if</code> on x or y doesn't work; use these instead:</p>
+<table>
+<tr><th>Instead of</th><th>Write</th></tr>
+<tr><td><code>if x &lt; 0.5: a else: b</code></td><td><code>np.where(x &lt; 0.5, a, b)</code></td></tr>
+<tr><td>a hard edge</td><td><code>smoothstep(0.49, 0.51, x)</code> (a soft one looks better on LEDs anyway)</td></tr>
+<tr><td><code>min(a, b)</code> / <code>max(a, b)</code></td><td><code>np.minimum(a, b)</code> / <code>np.maximum(a, b)</code></td></tr>
+</table>
+<p>In <code>frame()</code> the same grids are <code>c.x</code>, <code>c.y</code> (0..1) and <code>c.px</code>,
+<code>c.py</code> (pixels). The canvas itself is <code>c.img</code>: an array of h x w x 3 (red, green, blue, 0..1)
+you can work on directly with numpy, e.g. <code>c.img[:, :, 0] *= 0.5</code> halves the red.</p>
+
+<h2 id="recipes">Recipes</h2>
+<h3>Trails</h3>
+<pre><code><span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">fade</span>(<span class="n">0.85</span>)              <span class="c"># 0.5 = short trails, 0.95 = long</span>
+    ...draw...</code></pre>
+<h3>Glowing particles</h3>
+<pre><code><span class="k">def</span> <span class="f">setup</span>(c):
+    c.px, c.py = <span class="f">rand</span>(<span class="n">0</span>, c.w, n=<span class="n">500</span>), <span class="f">rand</span>(<span class="n">0</span>, c.h, n=<span class="n">500</span>)
+
+<span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">fade</span>(<span class="n">0.8</span>)
+    c.px += (<span class="f">noise</span>(c.px * <span class="n">0.05</span>, c.py * <span class="n">0.05</span>, t) - <span class="n">0.5</span>) * <span class="n">60</span> * c.dt   <span class="c"># drift on a noise "wind"</span>
+    c.py += (<span class="f">noise</span>(c.px * <span class="n">0.05</span>, c.py * <span class="n">0.05</span>, t + <span class="n">9</span>) - <span class="n">0.5</span>) * <span class="n">60</span> * c.dt
+    c.px %= c.w; c.py %= c.h                                       <span class="c"># wrap round the edges</span>
+    c.<span class="f">points</span>(c.px, c.py, cyan)
+    c.<span class="f">glow</span>()</code></pre>
+<h3>Feedback tunnel</h3>
+<pre><code><span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">zoom</span>(<span class="n">1.06</span>, <span class="n">3</span>)           <span class="c"># everything grows 6% and turns 3 degrees per frame</span>
+    c.<span class="f">fade</span>(<span class="n">0.95</span>)
+    c.<span class="f">circle</span>(c.w / <span class="n">2</span>, c.h / <span class="n">2</span>, <span class="n">4</span>, <span class="f">hsv</span>(t * <span class="n">0.2</span>), width=<span class="n">1</span>)</code></pre>
+<h3>Text that fits</h3>
+<pre><code>params = {<span class="s">"message"</span>: <span class="f">textbox</span>(<span class="s">"HELLO WORLD"</span>)}
+
+<span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">clear</span>()
+    size = c.h * <span class="n">0.6</span>
+    <span class="k">while</span> c.<span class="f">text_width</span>(message, size) &gt; c.w * <span class="n">0.95</span>:   <span class="c"># shrink until it fits</span>
+        size *= <span class="n">0.9</span>
+    c.<span class="f">text</span>(message, color=<span class="f">hsv</span>(t * <span class="n">0.1</span>), size=size, font=<span class="s">"Anton"</span>)</code></pre>
+<h3>Something every few seconds</h3>
+<pre><code><span class="k">def</span> <span class="f">setup</span>(c):
+    c.next = <span class="n">0</span>
+
+<span class="k">def</span> <span class="f">frame</span>(c, t):
+    <span class="k">if</span> t &gt;= c.next:
+        c.next = t + <span class="f">rand</span>(<span class="n">2</span>, <span class="n">5</span>)                 <span class="c"># again in 2 to 5 seconds</span>
+        c.<span class="f">clear</span>(<span class="f">hsv</span>(<span class="f">rand</span>()))                    <span class="c"># a flash of a random color</span>
+    c.<span class="f">fade</span>(<span class="n">0.9</span>)</code></pre>
+<h3>Your logo, bouncing</h3>
+<pre><code><span class="k">def</span> <span class="f">frame</span>(c, t):
+    c.<span class="f">clear</span>()
+    x = <span class="f">pingpong</span>(t * <span class="n">0.3</span>) * (c.w - <span class="n">40</span>)
+    y = <span class="f">pingpong</span>(t * <span class="n">0.23</span>) * (c.h - <span class="n">20</span>)
+    c.<span class="f">image</span>(<span class="s">"logo.png"</span>, x, y, w=<span class="n">40</span>)          <span class="c"># logo.png in the same folder as the script</span></code></pre>
+
+<h2 id="speed">Keeping it fast</h2>
+<p>At 30 frames per second a script has about 33 milliseconds per frame. The examples take 1 to 10 ms on a
+256 x 128 wall. If yours stutters, check the "drawing ... fps" figure under Display, and try:</p>
+<ul>
+<li><b>Whole-picture math beats loops.</b> A <code>for</code> loop over every pixel in Python is slow;
+    the same formula in <code>pixel()</code> or on <code>c.x</code>/<code>c.y</code> is worked out all at once.</li>
+<li><b>Particles: use <code>c.points</code></b> with arrays rather than <code>c.circle</code> in a loop. Thousands of
+    points are fine; a few hundred circles are fine.</li>
+<li><b>Noise is the slow part.</b> Work it out at half size and stretch it up (Fire and Kaleidoscope do this):
+<pre><code>x, y = c.x[::<span class="n">2</span>, ::<span class="n">2</span>], c.y[::<span class="n">2</span>, ::<span class="n">2</span>]              <span class="c"># every 2nd pixel</span>
+n = cv2.<span class="f">resize</span>(<span class="f">fbm</span>(x * <span class="n">3</span>, y * <span class="n">3</span>, t), (c.w, c.h))  <span class="c"># back to full size</span></code></pre></li>
+<li><b>Only depends on x?</b> Work it out once per column and spread it down (Aurora does this):
+    <code>row = c.x[0]</code> is one row of x values; <code>value[None, :]</code> repeats it down the picture.</li>
+<li>Big walls (512 x 256 and up) have 4 times the pixels of 256 x 128; pixel-heavy scripts slow down accordingly.</li>
+</ul>
+
+<h2 id="errors">When something's wrong</h2>
+<p>A mistake never stops the playlist. The wall keeps the last good picture, dimmed, with a red edge. The status
+bar at the bottom of the app says what's wrong, and the editor shows the message and marks the line in red.
+Fix it, press Ctrl+S (Cmd+S on a Mac), and it carries on.</p>
+<table>
+<tr><th>Message says</th><th>Usually means</th></tr>
+<tr><td><code>NameError: name 'spead' is not defined</code></td><td>A typo, or a variable used before it's set. Values kept between frames go on <code>c</code> (<code>c.speed</code>).</td></tr>
+<tr><td><code>invalid syntax</code> / <code>expected ':'</code></td><td>A missing <code>:</code> after <code>def</code>/<code>if</code>/<code>for</code>, or a missing bracket. The real mistake is often on the line before.</td></tr>
+<tr><td><code>unexpected indent</code> / <code>expected an indented block</code></td><td>Indentation: the lines inside a <code>def</code>, <code>if</code> or <code>for</code> must be indented by 4 spaces.</td></tr>
+<tr><td><code>The truth value of an array ... is ambiguous</code></td><td>An <code>if</code> on <code>x</code>/<code>y</code> in <code>pixel()</code>; use <code>np.where</code> (see <a href="#arrays">Whole-picture math</a>).</td></tr>
+<tr><td><code>the script needs a pixel(x, y, t) or a frame(c, t) function</code></td><td>Neither function is there, or it's spelled differently.</td></tr>
+<tr><td>Everything black, no error</td><td>Colors are 0..1, so <code>(0.002, 0, 0)</code> is nearly off. Or the drawing is outside the display (check you're using pixels in <code>frame</code> and 0..1 in <code>pixel</code>).</td></tr>
+</table>
+
+<h2 id="files">Files and sharing</h2>
+<ul>
+<li><b>Examples</b> live in the app's <code>scripts</code> folder. Updates to the app may replace them, so don't edit
+    them there; <b>Edit code</b> makes your own copy.</li>
+<li><b>My scripts</b> are in <code>%APPDATA%\DDP Streamer\scripts</code> on Windows (<code>~/DDP Streamer/scripts</code>
+    elsewhere). <b>Folder</b> in the Script window opens it. Pictures used with <code>c.image</code> can go there too.</li>
+<li>A script is one <code>.py</code> file: to share one, send the file; to use one, put it in My scripts.</li>
+<li>Saved live data is in <code>%APPDATA%\DDP Streamer\cache</code>; deleting it is harmless.</li>
+<li>Settings, including keys typed into secret boxes, are saved in the app's settings file on this computer.</li>
+<li>You can also edit in VS Code or any editor (<b>Open in other editor</b>); saving there updates the wall the same way.</li>
+</ul>
+<div class="note warn"><b>Scripts are programs.</b> A script can do anything a Python program can, including reading
+and deleting files. Only use scripts from people you trust, and look through one before you run it.</div>
+
+</main>
+</div>
+</body>
+</html>
