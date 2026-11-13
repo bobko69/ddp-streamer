@@ -1,8 +1,8 @@
 # Bong 69 DDP Streamer
 
 Put videos, pictures, your screen, a camera, text, clocks and animations on
-an LED matrix: a WLED panel, or anything else that speaks DDP. Free and open
-source.
+an LED matrix: a WLED panel, a [HUB75 Bridge](https://github.com/bobko69/Hub75_Bridge),
+or anything else that speaks DDP. Free and open source.
 
 ![A video playing on a 256x128 LED wall made of eight 64x64 panels, with the stats overlay in the top left corner](docs/img/demo.gif)
 
@@ -170,6 +170,25 @@ OpenCV versions need macOS 14).
    between. If an item fails or stops sending for 15 s, the streamer
    restarts it or moves on, and the status line counts these recoveries
    (details in `streamer.log`, next to the settings).
+
+## Quick start with the HUB75 Bridge
+
+The [HUB75 Bridge](https://github.com/bobko69/Hub75_Bridge) is a wired
+Ethernet board for big HUB75 walls: four panel ports, up to 16 64x64 panels
+at 60 fps (24 at 40 fps) on one board.
+
+1. Set up your panels on the bridge's web page (`http://hub75bridge.local`):
+   panel size and panel map.
+2. Open DDP Streamer, click **Find boards** and add the bridge, then click
+   **Get size**.
+3. Click **Add**, pick a video, a script or some text, and press **Play**.
+
+A bridge in demo mode ignores streams: if its demos are running, press its
+Demo button (or turn demo mode off from the streamer) first. With the stats
+overlay on, **BOARD** shows the frames the bridge
+really draws and its refresh rate. For a wall bigger than one bridge, use
+several and **Span** them (below): one streamer has fed three bridges at
+60 fps for 12 hours, 2.14 million frames each, with no errors.
 
 ### Several displays
 
